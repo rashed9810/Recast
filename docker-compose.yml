@@ -1,0 +1,34 @@
+# Start everything:            docker compose up --build      → http://localhost:3000
+# Also start Ollama in Docker: docker compose --profile local-model up --build
+#   then, once:                docker compose exec ollama ollama pull qwen2.5:7b-instruct
+#   and in the app's Model setup use the server address  http://ollama:11434/v1
+# Ollama installed normally on your computer instead? Use  http://host.docker.internal:11434/v1
+services:
+  backend:
+    build: ./backend
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      CORS_ORIGINS: http://localhost:3000
+      RECAST_DATA_DIR: /data
+    volumes: ["recast-data:/data"]      # keeps settings saved in the app
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    ports: ["8000:8000"]
+
+  frontend:
+    build: ./frontend
+    environment:
+      BACKEND_URL: http://backend:8000
+    ports: ["3000:3000"]
+    depends_on: [backend]
+
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["local-model"]
+    ports: ["11434:11434"]
+    volumes: ["ollama:/root/.ollama"]
+
+volumes:
+  recast-data:
+  ollama:
